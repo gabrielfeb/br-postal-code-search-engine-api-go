@@ -1,1 +1,0 @@
-{"origem":"BrasilAPI","endereco":{"bairro":"","cep":"01153000","localidade":"","logradouro":"","uf":""}}

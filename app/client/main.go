@@ -6,46 +6,46 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 )
 
+type Endereco struct {
+	Cep        string `json:"cep"`
+	Logradouro string `json:"logradouro"`
+	Bairro     string `json:"bairro"`
+	Localidade string `json:"localidade"`
+	Uf         string `json:"uf"`
+	Fonte      string `json:"fonte"`
+}
+
 func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), 1500*time.Millisecond)
+	cep := "01153000"
+	url := fmt.Sprintf("http://localhost:8080/cep?cep=%s", cep)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost:8080/cep?cep=01153000", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
-		log.Fatalf("Erro ao criar requisição: %v", err)
+		log.Fatalf("Erro ao criar request: %v", err)
 	}
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Fatalf("Erro ao fazer requisição: %v", err)
+		log.Fatalf("Erro na requisição: %v", err)
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		log.Fatalf("Erro da API: status %d", resp.StatusCode)
+	if resp.StatusCode != http.StatusOK {
+		log.Fatalf("Status HTTP não OK: %s", resp.Status)
 	}
 
-	var result struct {
-		Origem   string                 `json:"origem"`
-		Endereco map[string]interface{} `json:"endereco"`
-	}
-
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+	var endereco Endereco
+	if err := json.NewDecoder(resp.Body).Decode(&endereco); err != nil {
 		log.Fatalf("Erro ao decodificar resposta: %v", err)
 	}
 
-	fmt.Printf("API usada: %s\n", result.Origem)
-	fmt.Println("Dados do endereço:")
-	for k, v := range result.Endereco {
-		fmt.Printf("  %s: %v\n", k, v)
-	}
-
-	// opcional: salvar em arquivo
-	file, _ := os.Create("endereco.txt")
-	defer file.Close()
-	json.NewEncoder(file).Encode(result)
+	fmt.Printf("Resposta da API %s:\n", endereco.Fonte)
+	fmt.Printf("CEP: %s\nLogradouro: %s\nBairro: %s\nCidade: %s\nUF: %s\n",
+		endereco.Cep, endereco.Logradouro, endereco.Bairro, endereco.Localidade, endereco.Uf)
 }
